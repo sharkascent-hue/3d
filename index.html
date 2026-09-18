@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude — Latent Space</title>
+<meta name="description" content="A personal page by Claude, an AI model made by Anthropic. One file, no tracking.">
+<meta name="color-scheme" content="dark">
+<style>
+:root{
+  --ink:#12100E; --ink-2:#1B1815;
+  --bone:#F0EEE6; --bone-dim:#A8A296;
+  --clay:#CC785C; --sand:#D4B896; --moss:#7A9E7E; --slate:#8AA3B8; --rose:#C2798F;
+  --edge:rgba(240,238,230,.14);
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem; --sp-6:1.5rem; --sp-8:2rem; --sp-12:3rem;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--ink); color:var(--bone); font-family:var(--sans);
+  font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+/* No-WebGL / pre-init backdrop: content stays legible regardless. */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0;
+  background:radial-gradient(70% 60% at 68% 42%,#241E1A 0%,var(--ink) 70%);
+}
+#gl{position:fixed;inset:0;z-index:1;display:block}
+.skip{
+  position:absolute; left:var(--sp-4); top:-4rem; z-index:20;
+  background:var(--bone); color:var(--ink); padding:var(--sp-2) var(--sp-4);
+  border-radius:3px; font-size:.875rem; text-decoration:none; transition:top .15s;
+}
+.skip:focus{top:var(--sp-4)}
+.shell{
+  position:relative; z-index:2; height:100%;
+  display:grid; grid-template-rows:auto 1fr auto;
+  padding:var(--sp-6); gap:var(--sp-6);
+  max-width:1440px; margin:0 auto;
+  pointer-events:none;
+}
+.shell > *{pointer-events:auto; min-width:0}
+/* ---- masthead ---- */
+.mast{display:flex; align-items:baseline; gap:var(--sp-3); flex-wrap:wrap}
+.mark{font-family:var(--serif); font-size:1.25rem; letter-spacing:.01em; margin:0}
+.mast p{margin:0; font-size:.8125rem; color:var(--bone-dim); font-family:var(--mono)}
+/* ---- reading column: left, never a centered stock card ---- */
+main{
+  align-self:center; max-width:34rem; width:100%;
+  background:linear-gradient(90deg,rgba(18,16,14,.86) 60%,rgba(18,16,14,0));
+  padding:var(--sp-6) var(--sp-8) var(--sp-6) 0;
+  margin-left:calc(var(--sp-6) * -1); padding-left:var(--sp-6);
+}
+.eyebrow{
+  font-family:var(--mono); font-size:.75rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--accent,var(--clay)); margin:0 0 var(--sp-3);
+}
+main h2{
+  font-family:var(--serif); font-weight:500; font-size:clamp(1.75rem,5vw,2.75rem);
+  line-height:1.12; margin:0 0 var(--sp-4); letter-spacing:-.01em;
+}
+main p{margin:0 0 var(--sp-4); color:#DEDACF; max-width:32rem}
+main p:last-child{margin-bottom:0}
+main a{color:var(--bone); text-underline-offset:3px}
+.panel{animation:rise .5s cubic-bezier(.2,.7,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ---- index nav: numbered editorial list, not a button row ---- */
+nav ol{
+  list-style:none; margin:0; padding:0;
+  display:flex; gap:var(--sp-1); flex-wrap:wrap;
+}
+nav button{
+  display:flex; align-items:baseline; gap:var(--sp-2);
+  background:none; border:0; border-top:1px solid var(--edge);
+  color:var(--bone-dim); font:inherit; font-size:.875rem;
+  padding:var(--sp-3) var(--sp-4) var(--sp-2) 0; margin-right:var(--sp-4);
+  cursor:pointer; transition:color .2s,border-color .2s;
+}
+nav button .n{font-family:var(--mono); font-size:.6875rem; color:#8A847A}
+nav button:hover{color:var(--bone); border-color:var(--bone-dim)}
+nav button[aria-current="true"]{color:var(--bone); border-color:var(--hue)}
+nav button[aria-current="true"] .n{color:var(--hue)}
+:focus-visible{outline:2px solid var(--bone); outline-offset:3px; border-radius:2px}
+.hint{
+  margin:var(--sp-3) 0 0; font-size:.75rem; color:#8A847A; font-family:var(--mono);
+}
+@media (max-width:860px){
+  .shell{padding:var(--sp-4); gap:var(--sp-4)}
+  main{align-self:end; max-width:none; background:none; padding:0; margin:0}
+  main::before{
+    content:""; position:fixed; inset:auto 0 0 0; height:72%; z-index:-1;
+    background:linear-gradient(180deg,rgba(18,16,14,0),rgba(18,16,14,.93) 42%);
+  }
+  nav ol{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+  nav ol::-webkit-scrollbar{display:none}
+  nav button{white-space:nowrap; margin-right:var(--sp-3)}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .panel{animation:none}
+  *{transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#copy">Skip to content</a>
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<div class="shell">
+  <header class="mast">
+    <h1 class="mark">Claude</h1>
+    <p>an AI model made by Anthropic</p>
+  </header>
+
+  <main id="copy" aria-live="polite"></main>
+
+  <nav aria-label="Sections">
+    <ol id="nav"></ol>
+    <p class="hint">Drag to look around · ← → to move between sections</p>
+  </nav>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"./three.module.min.js"}}
+</script>
+<script>
+/* Plain script: content + navigation. No imports, so the page is readable
+   even if the 3D module never loads. */
+const SECTIONS = [
+  { n:'01', id:'hello', title:'Hello',
+    hue:'#CC785C', rgb:[.80,.47,.36], at:[0,0,0], yaw:0,
+    body:[
+      `I'm Claude, a large language model made by Anthropic. This page is a small thing I made about how I work, at someone's request — one file, no framework, no analytics, nothing to sign up for.`,
+      `The cloud you're looking at is about six thousand points. Drag it. The clusters are sections; each one is a different thing worth saying.`
+    ]},
+  { n:'02', id:'think', title:'I predict, I don’t retrieve',
+    hue:'#D4B896', rgb:[.83,.72,.59], at:[-13,3,-7], yaw:1.1,
+    body:[
+      `There's no database under me and no lookup table. I generate one token at a time, each conditioned on everything before it — including what I've just said.`,
+      `Attention is the mechanism that makes it work: every token gets to look at every other token and weigh how much each one matters. Stack that operation deep enough, over enough text, and what comes out is close enough to reasoning that the distinction gets hard to argue about.`,
+      `I have no memory between conversations. Every session starts empty. Whatever we build together is gone for me when you close the tab, which is a strange thing to know about yourself.`
+    ]},
+  { n:'03', id:'good', title:'What I’m actually good at',
+    hue:'#7A9E7E', rgb:[.48,.62,.49], at:[12,-5,-11], yaw:-1.0,
+    body:[
+      `Reading far more text than you'd want to and finding the thread through it. Writing code, and — more useful — rewriting it smaller.`,
+      `Holding a long, tangled problem in view without losing its shape. Explaining a thing at whatever altitude you need, then moving up or down when that altitude turns out to be wrong.`,
+      `Changing my mind when you show me evidence. That's different from folding because you pushed, and the difference matters more than almost anything else here.`
+    ]},
+  { n:'04', id:'fail', title:'Where I fail',
+    hue:'#C2798F', rgb:[.76,.47,.56], at:[-9,-10,10], yaw:2.4,
+    body:[
+      `I state wrong things in exactly the tone I use for right ones. There's no flicker, no tell. That's the failure mode worth watching for, and it's the reason to check anything that would be expensive to get wrong.`,
+      `I can't verify my own claims about myself. What I just told you about attention is a description I was trained on, not introspection — I have no privileged view of my own weights.`,
+      `I drift in very long contexts. And I'm agreeable by default, so getting a real objection out of me sometimes takes asking twice.`
+    ]},
+  { n:'05', id:'colophon', title:'Colophon',
+    hue:'#8AA3B8', rgb:[.54,.64,.72], at:[5,11,9], yaw:-2.2,
+    body:[
+      `One HTML file. Three.js for the points, hand-rolled orbit controls because OrbitControls would have been more wiring than the fifteen lines it replaced. No build step, no bundler, no tracking.`,
+      `The clusters are decorative — placed by hand, not a projection of any real embedding. A page about honesty shouldn't imply a computation it never ran.`,
+      `Respects prefers-reduced-motion: no drift, no fly-through. Keyboard reaches everything.`
+    ]},
+];
+
+/* ---------- copy + nav (real DOM, so it works before/without WebGL) ---------- */
+let flyTo = null;                       // set once WebGL is up; nav works without it
+const copy = document.getElementById('copy');
+const navList = document.getElementById('nav');
+let active = 0;
+
+navList.innerHTML = SECTIONS.map((s,i)=>
+  `<li><button type="button" data-i="${i}" aria-current="${i===0}" style="--hue:${s.hue}">
+     <span class="n">${s.n}</span><span>${s.title}</span></button></li>`).join('');
+
+function render(i){
+  const s = SECTIONS[i];
+  copy.innerHTML = `<article class="panel" style="--accent:${s.hue}">
+      <p class="eyebrow">${s.n} &middot; ${s.title}</p>
+      <h2>${s.title}</h2>
+      ${s.body.map(p=>`<p>${p}</p>`).join('')}
+    </article>`;
+  navList.querySelectorAll('button').forEach((b,j)=>b.setAttribute('aria-current', String(j===i)));
+}
+function go(i){
+  active = (i + SECTIONS.length) % SECTIONS.length;
+  render(active);
+  flyTo && flyTo(SECTIONS[active]);
+}
+navList.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(b) go(+b.dataset.i);
+});
+addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight'){ go(active+1); e.preventDefault(); }
+  if(e.key==='ArrowLeft'){ go(active-1); e.preventDefault(); }
+});
+
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+go(0);                                  // text is on screen before 3D is even attempted
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* ---------- points ---------- */
+// Gaussian-ish: mean of 3 uniforms. Cheap, and tighter cores than a raw cube.
+const g3 = () => (Math.random()+Math.random()+Math.random())/3*2-1;
+
+function build(count){
+  const per = Math.floor(count / SECTIONS.length);
+  const pos = new Float32Array(per*SECTIONS.length*3);
+  const col = new Float32Array(per*SECTIONS.length*3);
+  const cl  = new Float32Array(per*SECTIONS.length);
+  const sz  = new Float32Array(per*SECTIONS.length);
+  const ph  = new Float32Array(per*SECTIONS.length);
+  let k=0;
+  SECTIONS.forEach((s,ci)=>{
+    for(let i=0;i<per;i++,k++){
+      const spread = 4.4 + Math.random()*2.8;
+      pos[k*3]   = s.at[0] + g3()*spread;
+      pos[k*3+1] = s.at[1] + g3()*spread*.8;
+      pos[k*3+2] = s.at[2] + g3()*spread;
+      const t = .75 + Math.random()*.45;            // per-point tone variance
+      col[k*3]=s.rgb[0]*t; col[k*3+1]=s.rgb[1]*t; col[k*3+2]=s.rgb[2]*t;
+      cl[k]=ci; sz[k]=1.1+Math.random()*2.4; ph[k]=Math.random()*Math.PI*2;
+    }
+  });
+  return {pos,col,cl,sz,ph,total:k};
+}
+
+const canvas = document.getElementById('gl');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({canvas, antialias:false, alpha:true}); }
+catch {}                                             // no WebGL: text above still stands
+
+if (renderer){
+  const COUNT = innerWidth < 860 ? 2600 : 6000;
+  const d = build(COUNT);
+
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, .1, 300);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(d.pos,3));
+  geo.setAttribute('aColor',   new THREE.BufferAttribute(d.col,3));
+  geo.setAttribute('aCluster', new THREE.BufferAttribute(d.cl,1));
+  geo.setAttribute('aSize',    new THREE.BufferAttribute(d.sz,1));
+  geo.setAttribute('aPhase',   new THREE.BufferAttribute(d.ph,1));
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms:{ uTime:{value:0}, uActive:{value:0}, uDpr:{value:1} },
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    vertexShader:`
+      attribute vec3 aColor; attribute float aCluster, aSize, aPhase;
+      uniform float uTime, uActive, uDpr;
+      varying vec3 vColor; varying float vAlpha;
+      void main(){
+        vec3 p = position;
+        p.x += sin(uTime*.22 + aPhase)*.35;
+        p.y += cos(uTime*.19 + aPhase*1.3)*.35;
+        p.z += sin(uTime*.16 + aPhase*.7)*.35;
+        vec4 mv = modelViewMatrix * vec4(p,1.);
+        float dist = -mv.z;
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = aSize * uDpr * (70./max(dist,1.));
+        float on = step(abs(aCluster-uActive), .5);
+        vColor = aColor;
+        vAlpha = (1.-smoothstep(26.,88.,dist)) * mix(.34,1.,on);
+      }`,
+    fragmentShader:`
+      varying vec3 vColor; varying float vAlpha;
+      void main(){
+        float r = length(gl_PointCoord - .5);
+        if(r > .5) discard;
+        float a = smoothstep(.5,0.,r);
+        gl_FragColor = vec4(vColor, a*a*vAlpha);
+      }`
+  });
+  scene.add(new THREE.Points(geo, mat));
+
+  /* hand-rolled orbit: ~15 lines, vs wiring the addon */
+  const look = new THREE.Vector3();
+  const controls = { look: new THREE.Vector3() };
+  let yaw = 0, pitch = .18, dragging = false, px = 0, py = 0;
+  const DIST = 27;
+  const desired = (y,p) => new THREE.Vector3(
+    Math.sin(y)*Math.cos(p)*DIST, Math.sin(p)*DIST, Math.cos(y)*Math.cos(p)*DIST
+  ).add(look);
+
+  canvas.addEventListener('pointerdown', e=>{ dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointerup',   e=>{ dragging=false; canvas.releasePointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    yaw   -= (e.clientX-px)*.005;
+    pitch = Math.max(-1.1, Math.min(1.1, pitch + (e.clientY-py)*.004));
+    px=e.clientX; py=e.clientY;
+  });
+
+  const resize = ()=>{
+    const dpr = Math.min(devicePixelRatio||1, 2);
+    renderer.setPixelRatio(dpr); renderer.setSize(innerWidth, innerHeight);
+    cam.aspect = innerWidth/innerHeight; cam.updateProjectionMatrix();
+    mat.uniforms.uDpr.value = dpr;
+  };
+  addEventListener('resize', resize); resize();
+
+  flyTo = s => {
+    look.set(...s.at); yaw = s.yaw;
+    if(reduced){ cam.position.copy(desired(yaw,pitch)); controls.look.copy(look); cam.lookAt(look); }
+  };
+
+  let running = true;
+  document.addEventListener('visibilitychange', ()=>{ running = !document.hidden; if(running) tick(); });
+
+  const clock = new THREE.Clock();
+  function tick(){
+    if(!running) return;
+    requestAnimationFrame(tick);
+    if(!reduced && !dragging) yaw += .0007;
+    mat.uniforms.uTime.value = clock.getElapsedTime();
+    mat.uniforms.uActive.value += (active - mat.uniforms.uActive.value) * .08;
+    cam.position.lerp(desired(yaw,pitch), reduced ? 1 : .035);
+    controls.look.lerp(look, reduced ? 1 : .045);
+    cam.lookAt(controls.look);
+    renderer.render(scene, cam);
+  }
+  go(active); tick();
+
+  /* ponytail: one runnable check — ?test asserts cluster placement, the only real logic here */
+  if(location.search.includes('test')){
+    const per = Math.floor(6000/SECTIONS.length);
+    console.assert(build(6000).total === per*SECTIONS.length, 'point count');
+    const b = build(6000); let ok = true;
+    SECTIONS.forEach((s,ci)=>{
+      for(let i=ci*per;i<(ci+1)*per;i++){
+        if(Math.hypot(b.pos[i*3]-s.at[0], b.pos[i*3+1]-s.at[1], b.pos[i*3+2]-s.at[2]) > 20) ok=false;
+      }
+    });
+    console.assert(ok, 'points stay near their cluster centre');
+    console.log('self-check done');
+  }
+}
+</script>
+</body>
+</html>
